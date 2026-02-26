@@ -1,0 +1,4 @@
+aws_region: ""
+s3_bucket: ""
+s3_key: ""
+lambda_function_name: ""

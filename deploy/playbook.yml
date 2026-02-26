@@ -1,0 +1,14 @@
+- name: Deploy application to AWS Lambda
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+  vars:
+    TF_VAR_aws_region: "{{ lookup('env', 'TF_VAR_aws_region') }}"
+    TF_VAR_s3_bucket: "{{ lookup('env', 'TF_VAR_s3_bucket') }}"
+    TF_VAR_s3_key: "{{ lookup('env', 'TF_VAR_s3_key') }}"
+    TF_VAR_function_name: "{{ lookup('env', 'TF_VAR_function_name') }}"
+    AWS_ACCESS_KEY_ID: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+    AWS_SECRET_ACCESS_KEY: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+  roles:
+    - deploy_lambda

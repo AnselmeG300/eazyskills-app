@@ -1,0 +1,111 @@
+name: IaC & Deploy EAZYSkills
+
+on:
+  workflow_dispatch:  
+  push:
+    branches:
+      - main
+    paths:
+      - 'iac/**'
+      - '.github/workflows/cd.yml'
+      - 'deploy/**'
+      - 'app/backend/**'
+      
+  pull_request:
+    branches:
+      - main
+env: 
+  TF_VAR_aws_region: "eu-west-1"
+  TF_VAR_function_name: "eazyskills-lambda"
+  TF_VAR_repository: "https://github.com/eazytraining/eazyskills-app.git"
+  TF_VAR_s3_bucket: "bucket-artefacts-application-eazy"
+  TF_VAR_s3_key: "eazyskills_lambda.zip"
+
+jobs:
+  iac:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: iac
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 
+
+      - name: Check IaC changes
+        id: check_iac_changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            iac:
+              - 'iac/**'
+
+
+      - name: Set IaC changed flag
+        run: echo "IAC_CHANGED=${{ steps.check_iac_changes.outputs.iac == 'true' }}" >> $GITHUB_ENV
+      
+      - name: Setup Terraform
+        if: env.IAC_CHANGED == 'true'
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: latest
+
+      - name: Configure Terraform Cloud Authentication
+        if: env.IAC_CHANGED == 'true'
+        run: |
+          echo 'credentials "app.terraform.io" { token = "${{ secrets.TFC_TOKEN }}" }' > ~/.terraformrc
+
+      - name: Initialize Terraform
+        if: env.IAC_CHANGED == 'true'
+        run: terraform init
+
+      - name: Apply Terraform changes
+        if: env.IAC_CHANGED == 'true'
+        run: terraform apply -auto-approve
+
+  deploy:
+    needs: iac
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app/backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
+
+      - name: Check Deploy changes
+        id: check_deploy_changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            deploy:
+              - 'deploy/**'
+            backend:
+              - 'app/backend/**'
+
+      - name: Set Deploy changed flag
+        run: echo "DEPLOY_CHANGED=${{ steps.check_deploy_changes.outputs.deploy == 'true' || steps.check_deploy_changes.outputs.backend == 'true' }}" >> $GITHUB_ENV
+
+      - name: Install Python and dependencies
+        if: env.DEPLOY_CHANGED == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Ansible & AWS Collection
+        if: env.DEPLOY_CHANGED == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible>=2.15
+          ansible-galaxy collection install amazon.aws
+
+      - name: Run Ansible playbook
+        if: env.DEPLOY_CHANGED == 'true'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: ansible-playbook ../../deploy/playbook.yml 

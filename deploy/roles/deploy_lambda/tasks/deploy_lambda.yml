@@ -1,0 +1,28 @@
+---
+- name: Install awscli
+  shell: |
+    bash -c "source venv/bin/activate && pip3 install awscli"
+  args:
+    chdir: "../app/backend"
+  environment:
+    VIRTUAL_ENV: "../app/backend/venv"
+    PATH: "../app/backend/venv/bin:{{ ansible_env.PATH }}"
+
+- name: Update Lambda
+  command: |
+    ../app/backend/venv/bin/aws lambda update-function-code \
+      --function-name {{ TF_VAR_function_name }} \
+      --s3-bucket {{ TF_VAR_s3_bucket }} \
+      --s3-key eazyskills-artefacts/{{ TF_VAR_s3_key }}
+      --region {{ TF_VAR_aws_region }}
+  environment:
+    PATH: "../app/backend/venv/bin:{{ ansible_env.PATH }}"
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_REGION: "{{ TF_VAR_aws_region }}"
+  vars:
+    ansible_python_interpreter: "../app/backend/venv/bin/python3"
+  register: lambda_result
+
+- debug:
+    var: lambda_result

@@ -1,0 +1,23 @@
+---
+- name: Install boto and boto3
+  shell: |
+    bash -c "source venv/bin/activate && pip3 install boto3 botocore"
+  args:
+    chdir: "../app/backend"
+  environment:
+    VIRTUAL_ENV: "../app/backend/venv"
+    PATH: "../app/backend/venv/bin:{{ ansible_env.PATH }}"
+
+
+- name: Upload package to S3
+  amazon.aws.s3_object:
+    bucket: "{{ TF_VAR_s3_bucket }}"
+    src: "/tmp/{{ TF_VAR_s3_key }}"
+    object: "eazyskills-artefacts/{{ TF_VAR_s3_key }}"
+    mode: put
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+    AWS_REGION: "{{ TF_VAR_aws_region }}"
+  vars:
+    ansible_python_interpreter: "../app/backend/venv/bin/python3"

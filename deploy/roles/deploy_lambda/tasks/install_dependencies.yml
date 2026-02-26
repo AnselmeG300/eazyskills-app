@@ -1,0 +1,6 @@
+---
+- name: Activate virtual environment and install dependencies
+  shell: |
+    bash -c "source venv/bin/activate && pip install -r requirements.txt"
+  args:
+    chdir: "../app/backend"

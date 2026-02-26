@@ -1,0 +1,22 @@
+# Terraform state files
+*.tfstate
+*.tfstate.backup
+terraform.tfstate.d/
+
+# Crash logs
+crash.log
+
+# Ignore Terraform plan files
+*.tfplan
+
+# Ignore sensitive files
+*.auto.tfvars
+*.auto.tfvars.json
+.terraform.lock.hcl
+
+# Ignore local Terraform directories
+.terraform/
+
+# Ignore logs and temp files
+*.log
+.DS_Store

@@ -1,0 +1,21 @@
+---
+- name: Configuration aws credentials
+  import_tasks: configure_aws.yml
+
+- name: Configuration Python
+  import_tasks: setup_python.yml
+
+- name: Installation des dépendances
+  import_tasks: install_dependencies.yml
+
+- name: Mise à jour de la base de données
+  import_tasks: update_database.yml
+
+- name: Création du package
+  import_tasks: package_application.yml
+
+- name: Envoi du package vers S3
+  import_tasks: upload_s3.yml
+
+- name: Déploiement sur AWS Lambda
+  import_tasks: deploy_lambda.yml
